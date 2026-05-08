@@ -46,10 +46,17 @@ service cloud.firestore {
     }
 
     // ---------- shops ----------
-    // Owner kendi dükkanını okur, boss hepsini okur. Yazma yok — Console'dan eklenir.
+    // Owner kendi dükkanını okur, boss hepsini okur.
+    // Dükkan oluşturma Console'dan yapılır. Sadece boss `partners` alanını güncelleyebilir.
     match /shops/{shopId} {
       allow read: if isOwnerOf(shopId) || isBoss();
-      allow write: if false;
+      allow create, delete: if false;
+
+      // Boss yalnızca partners alanını değiştirebilir.
+      allow update: if isBoss()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['partners'])
+        && request.resource.data.partners is list
+        && request.resource.data.partners.size() > 0;
 
       // ---------- shops/{shopId}/revenues ----------
       // Owner sadece kendi dükkanına yazar. Boss salt-okur.

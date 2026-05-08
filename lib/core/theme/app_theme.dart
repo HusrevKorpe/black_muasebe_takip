@@ -5,21 +5,22 @@ class AppTheme {
 
   static ThemeData light() {
     final scheme = ColorScheme.fromSeed(seedColor: _seed, brightness: Brightness.light);
-    return _base(scheme);
+    return _base(scheme, chromeColor: Colors.white);
   }
 
   static ThemeData dark() {
     final scheme = ColorScheme.fromSeed(seedColor: _seed, brightness: Brightness.dark);
-    return _base(scheme);
+    return _base(scheme, chromeColor: scheme.surface);
   }
 
-  static ThemeData _base(ColorScheme scheme) {
+  static ThemeData _base(ColorScheme scheme, {required Color chromeColor}) {
     return ThemeData(
       useMaterial3: true,
       colorScheme: scheme,
-      scaffoldBackgroundColor: scheme.surface,
+      scaffoldBackgroundColor: chromeColor,
       appBarTheme: AppBarTheme(
-        backgroundColor: scheme.surface,
+        backgroundColor: chromeColor,
+        surfaceTintColor: Colors.transparent,
         foregroundColor: scheme.onSurface,
         elevation: 0,
         centerTitle: false,
@@ -28,6 +29,12 @@ class AppTheme {
           fontSize: 20,
           fontWeight: FontWeight.w700,
         ),
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: chromeColor,
+        surfaceTintColor: Colors.transparent,
+        indicatorColor: scheme.primaryContainer,
+        elevation: 0,
       ),
       cardTheme: CardThemeData(
         elevation: 0,

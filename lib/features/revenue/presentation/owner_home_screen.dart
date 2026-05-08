@@ -72,15 +72,6 @@ class _OwnerHomeScreenState extends ConsumerState<OwnerHomeScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => RevenueEntrySheet.show(
-          context,
-          shopId: shopId,
-          createdBy: appUser!.uid,
-        ),
-        icon: const Icon(Icons.add_rounded),
-        label: const Text('Bugünün Cirosu'),
-      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _tab,
         onDestinationSelected: (i) => setState(() => _tab = i),

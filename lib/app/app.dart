@@ -7,6 +7,7 @@ import '../features/auth/presentation/login_screen.dart';
 import '../features/auth/providers/auth_providers.dart';
 import '../features/dashboard/presentation/boss_home_screen.dart';
 import '../features/revenue/presentation/owner_home_screen.dart';
+import '../features/splash/presentation/splash_screen.dart';
 
 class MuasebeApp extends ConsumerWidget {
   const MuasebeApp({super.key});
@@ -14,7 +15,7 @@ class MuasebeApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp(
-      title: 'Muasebe Takip',
+      title: 'Black Muasebe',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
@@ -39,13 +40,13 @@ class _RootRouter extends ConsumerWidget {
     final authState = ref.watch(authStateChangesProvider);
 
     return authState.when(
-      loading: () => const _SplashScaffold(),
+      loading: () => const SplashScreen(),
       error: (e, _) => _ErrorScaffold(message: e.toString()),
       data: (firebaseUser) {
         if (firebaseUser == null) return const LoginScreen();
         final appUserAsync = ref.watch(currentAppUserProvider);
         return appUserAsync.when(
-          loading: () => const _SplashScaffold(),
+          loading: () => const SplashScreen(),
           error: (e, _) => _ErrorScaffold(message: e.toString()),
           data: (appUser) {
             if (appUser == null) {
@@ -59,17 +60,6 @@ class _RootRouter extends ConsumerWidget {
           },
         );
       },
-    );
-  }
-}
-
-class _SplashScaffold extends StatelessWidget {
-  const _SplashScaffold();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(child: CircularProgressIndicator()),
     );
   }
 }

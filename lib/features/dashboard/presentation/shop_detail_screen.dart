@@ -6,7 +6,9 @@ import '../../../core/utils/money.dart';
 import '../../../models/shop.dart';
 import '../../employees/presentation/employees_screen.dart';
 import '../../expense/presentation/expenses_screen.dart';
+import '../../reports/presentation/monthly_report_screen.dart';
 import '../../revenue/providers/revenue_providers.dart';
+import '../../shop/presentation/shop_partners_screen.dart';
 
 class ShopDetailScreen extends ConsumerWidget {
   const ShopDetailScreen({super.key, required this.shop});
@@ -47,6 +49,24 @@ class ShopDetailScreen extends ConsumerWidget {
                   shopId: shop.id,
                   canEdit: false,
                 ),
+              ),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.handshake_outlined),
+            tooltip: 'Ortaklar',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => ShopPartnersScreen(shopId: shop.id),
+              ),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.assessment_outlined),
+            tooltip: 'Aylık Rapor',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => MonthlyReportScreen(shopId: shop.id),
               ),
             ),
           ),
