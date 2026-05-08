@@ -1,0 +1,107 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- yardımcı fonksiyonlar ----------
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isBoss() {
+      return isSignedIn() && userDoc().role == 'boss';
+    }
+
+    function isOwnerOf(shopId) {
+      return isSignedIn()
+        && userDoc().role == 'owner'
+        && userDoc().shopId == shopId;
+    }
+
+    // Yeni cironun veri bütünlüğünü kontrol et.
+    // - tarih anahtarı doc id ile aynı olmalı
+    // - createdBy gerçekten o kullanıcı olmalı
+    // - amount = cash + card
+    // - tutarlar 0 veya pozitif
+    function isValidRevenue(data, docId) {
+      return data.date is string
+        && data.date == docId
+        && data.cash is number && data.cash >= 0
+        && data.card is number && data.card >= 0
+        && data.amount is number
+        && data.amount == data.cash + data.card
+        && data.createdBy == request.auth.uid;
+    }
+
+    // ---------- users ----------
+    // Kullanıcı yalnızca kendi profilini OKUR. Yazma yok — yönetici Console'dan ekler.
+    // (Boss tüm profilleri okuyabilsin, çünkü dükkan adlarını/owner'ları eşleştirecek.)
+    match /users/{uid} {
+      allow read: if isSignedIn() && (request.auth.uid == uid || isBoss());
+      allow write: if false;
+    }
+
+    // ---------- shops ----------
+    // Owner kendi dükkanını okur, boss hepsini okur. Yazma yok — Console'dan eklenir.
+    match /shops/{shopId} {
+      allow read: if isOwnerOf(shopId) || isBoss();
+      allow write: if false;
+
+      // ---------- shops/{shopId}/revenues ----------
+      // Owner sadece kendi dükkanına yazar. Boss salt-okur.
+      match /revenues/{revId} {
+        allow read: if isOwnerOf(shopId) || isBoss();
+
+        // create: sadece o dükkanın owner'ı, doc id YYYY-MM-DD, veri tutarlı
+        allow create: if isOwnerOf(shopId)
+          && isValidRevenue(request.resource.data, revId);
+
+        // update: sadece o dükkanın owner'ı; date/createdBy değişmez.
+        // editHistory yalnızca büyüyebilir (audit trail), kısaltılamaz.
+        allow update: if isOwnerOf(shopId)
+          && request.resource.data.date == resource.data.date
+          && request.resource.data.createdBy == resource.data.createdBy
+          && request.resource.data.amount ==
+               request.resource.data.cash + request.resource.data.card
+          && (
+               !('editHistory' in resource.data)
+               || (
+                 'editHistory' in request.resource.data
+                 && request.resource.data.editHistory.size() >= resource.data.editHistory.size()
+               )
+             );
+
+        // silme yok — audit önemli
+        allow delete: if false;
+      }
+
+      // ---------- shops/{shopId}/expenses ----------
+      // GEÇİCİ DEBUG: tüm authenticated user'lara açık
+      match /expenses/{expenseId} {
+        allow read, write: if isSignedIn();
+      }
+
+      // ---------- shops/{shopId}/employees ----------
+      // Owner kendi dükkanının personelini ekler/siler. Boss salt-okur.
+      match /employees/{employeeId} {
+        allow read: if isOwnerOf(shopId) || isBoss();
+
+        allow create: if isOwnerOf(shopId)
+          && request.resource.data.name is string
+          && request.resource.data.name.size() > 0
+          && request.resource.data.phone is string
+          && request.resource.data.startDate is timestamp
+          && request.resource.data.createdBy == request.auth.uid;
+
+        // Şimdilik düzenleme yok — sil/yeniden ekle akışı.
+        allow update: if false;
+
+        allow delete: if isOwnerOf(shopId);
+      }
+    }
+  }
+}

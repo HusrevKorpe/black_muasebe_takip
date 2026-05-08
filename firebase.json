@@ -1,0 +1,26 @@
+{
+  "flutter": {
+    "platforms": {
+      "ios": {
+        "default": {
+          "projectId": "muasebe-takip",
+          "appId": "1:662432068913:ios:59aab2eab100b881b4ec10",
+          "uploadDebugSymbols": false,
+          "fileOutput": "ios/Runner/GoogleService-Info.plist"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "muasebe-takip",
+          "configurations": {
+            "ios": "1:662432068913:ios:59aab2eab100b881b4ec10"
+          }
+        }
+      }
+    }
+  },
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  }
+}
