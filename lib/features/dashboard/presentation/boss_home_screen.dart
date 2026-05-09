@@ -83,30 +83,111 @@ class _TodayTotalCard extends ConsumerWidget {
       }
     }
     final scheme = Theme.of(context).colorScheme;
-    return Card(
-      color: scheme.primaryContainer,
+    final progress = shops.isEmpty ? 0.0 : filed / shops.length;
+
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            scheme.primary,
+            Color.alphaBlend(
+              scheme.tertiary.withValues(alpha: 0.55),
+              scheme.primary,
+            ),
+          ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: scheme.primary.withValues(alpha: 0.30),
+            blurRadius: 26,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(22),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Bugün — ${DateKeys.human(DateKeys.today())}',
-              style: TextStyle(color: scheme.onPrimaryContainer),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: scheme.onPrimary.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.today_rounded,
+                    color: scheme.onPrimary,
+                    size: 14,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    DateKeys.human(DateKeys.today()),
+                    style: TextStyle(
+                      color: scheme.onPrimary,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12.5,
+                    ),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 14),
             Text(
               Money.format(total),
               style: TextStyle(
-                color: scheme.onPrimaryContainer,
-                fontSize: 36,
+                color: scheme.onPrimary,
+                fontSize: 40,
                 fontWeight: FontWeight.w800,
+                letterSpacing: -1.2,
+                height: 1.0,
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 4),
             Text(
-              '$filed / ${shops.length} dükkan ciro girdi',
-              style: TextStyle(color: scheme.onPrimaryContainer),
+              'Bugünün toplam cirosu',
+              style: TextStyle(
+                color: scheme.onPrimary.withValues(alpha: 0.75),
+                fontSize: 12.5,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 18),
+            Row(
+              children: [
+                Icon(
+                  filed == shops.length
+                      ? Icons.check_circle_rounded
+                      : Icons.access_time_rounded,
+                  color: scheme.onPrimary,
+                  size: 16,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  '$filed / ${shops.length} dükkan ciro girdi',
+                  style: TextStyle(
+                    color: scheme.onPrimary,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: LinearProgressIndicator(
+                value: progress,
+                minHeight: 6,
+                backgroundColor: scheme.onPrimary.withValues(alpha: 0.18),
+                valueColor: AlwaysStoppedAnimation(scheme.onPrimary),
+              ),
             ),
           ],
         ),
@@ -123,47 +204,149 @@ class _ShopRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final today = ref.watch(shopTodayRevenueProvider(shop.id));
     final scheme = Theme.of(context).colorScheme;
+    final hasRevenue = today.value != null;
 
-    return Card(
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: CircleAvatar(
-          backgroundColor: scheme.secondaryContainer,
-          child: Icon(Icons.storefront_rounded, color: scheme.onSecondaryContainer),
-        ),
-        title: Text(
-          shop.name,
-          style: const TextStyle(fontWeight: FontWeight.w700),
-        ),
-        subtitle: today.when(
-          loading: () => const Text('Yükleniyor…'),
-          error: (e, _) => Text('Hata: $e'),
-          data: (rev) {
-            if (rev == null) {
-              return Text(
-                'Bugün ciro girilmedi',
-                style: TextStyle(color: scheme.error),
-              );
-            }
-            return Text(
-              'Nakit ${Money.format(rev.cash)}  •  Kart ${Money.format(rev.card)}',
-            );
-          },
-        ),
-        trailing: today.when(
-          loading: () => const SizedBox(
-            width: 16,
-            height: 16,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
-          error: (_, _) => const Icon(Icons.error_outline),
-          data: (rev) => Text(
-            rev == null ? '—' : Money.format(rev.total),
-            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
-          ),
-        ),
+    return Material(
+      color: scheme.surface,
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
         onTap: () => Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => ShopDetailScreen(shop: shop)),
+        ),
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: hasRevenue
+                  ? scheme.outlineVariant.withValues(alpha: 0.4)
+                  : scheme.error.withValues(alpha: 0.35),
+              width: hasRevenue ? 1 : 1.2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      scheme.secondaryContainer,
+                      Color.alphaBlend(
+                        scheme.primary.withValues(alpha: 0.15),
+                        scheme.secondaryContainer,
+                      ),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(
+                  Icons.storefront_rounded,
+                  color: scheme.onSecondaryContainer,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      shop.name,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                        letterSpacing: -0.2,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    today.when(
+                      loading: () => Text(
+                        'Yükleniyor…',
+                        style: TextStyle(
+                          color: scheme.onSurfaceVariant,
+                          fontSize: 12,
+                        ),
+                      ),
+                      error: (e, _) => Text(
+                        'Hata: $e',
+                        style: TextStyle(color: scheme.error, fontSize: 12),
+                      ),
+                      data: (rev) {
+                        if (rev == null) {
+                          return Row(
+                            children: [
+                              Icon(
+                                Icons.warning_amber_rounded,
+                                color: scheme.error,
+                                size: 14,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Bugün ciro girilmedi',
+                                style: TextStyle(
+                                  color: scheme.error,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          );
+                        }
+                        return Text(
+                          'Nakit ${Money.format(rev.cash)}  •  Kart ${Money.format(rev.card)}',
+                          style: TextStyle(
+                            color: scheme.onSurfaceVariant,
+                            fontSize: 12,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              today.when(
+                loading: () => const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                error: (_, _) => Icon(Icons.error_outline, color: scheme.error),
+                data: (rev) => Text(
+                  rev == null ? '—' : Money.format(rev.total),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 16,
+                    letterSpacing: -0.4,
+                    color: rev == null
+                        ? scheme.onSurfaceVariant
+                        : scheme.onSurface,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: scheme.onSurfaceVariant.withValues(alpha: 0.6),
+                size: 20,
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -212,8 +212,8 @@ class _LedgerEntrySheetState extends ConsumerState<LedgerEntrySheet> {
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _noteCtrl,
-                  maxLines: 2,
                   textCapitalization: TextCapitalization.sentences,
+                  textInputAction: TextInputAction.done,
                   decoration: const InputDecoration(
                     labelText: 'Not (opsiyonel)',
                     prefixIcon: Icon(Icons.note_outlined),

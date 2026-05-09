@@ -55,7 +55,7 @@ class _RevenueCalendarScreenState extends ConsumerState<RevenueCalendarScreen> {
         final selectedRev = byKey[DateKeys.key(_selected)];
 
         return ListView(
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 96),
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 110),
           children: [
             Card(
               child: Padding(

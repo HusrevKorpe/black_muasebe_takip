@@ -150,10 +150,8 @@ class _ExpenseEntrySheetState extends ConsumerState<ExpenseEntrySheet> {
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _noteCtrl,
-                  minLines: 1,
-                  maxLines: 2,
                   textCapitalization: TextCapitalization.sentences,
-                  textAlignVertical: TextAlignVertical.center,
+                  textInputAction: TextInputAction.done,
                   decoration: const InputDecoration(
                     labelText: 'Not (opsiyonel)',
                     prefixIcon: Icon(Icons.note_outlined),

@@ -142,9 +142,11 @@ class _PartnerFormSheetState extends State<PartnerFormSheet> {
               TextFormField(
                 controller: _noteCtrl,
                 textCapitalization: TextCapitalization.sentences,
+                textInputAction: TextInputAction.done,
                 decoration: const InputDecoration(
                   labelText: 'Not (opsiyonel)',
                   hintText: 'örn. kurucu ortak',
+                  prefixIcon: Icon(Icons.note_outlined),
                   border: OutlineInputBorder(),
                 ),
               ),

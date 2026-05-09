@@ -44,6 +44,7 @@ class _OwnerHomeScreenState extends ConsumerState<OwnerHomeScreen> {
     final shopAsync = ref.watch(shopByIdProvider(shopId));
 
     return Scaffold(
+      extendBody: true,
       appBar: AppBar(
         title: Text(shopAsync.value?.name ?? 'Dükkanım'),
         actions: [
@@ -72,18 +73,18 @@ class _OwnerHomeScreenState extends ConsumerState<OwnerHomeScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: NavigationBar(
+      bottomNavigationBar: _FloatingBottomNav(
         selectedIndex: _tab,
-        onDestinationSelected: (i) => setState(() => _tab = i),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home_rounded),
+        onChanged: (i) => setState(() => _tab = i),
+        items: const [
+          _NavItem(
+            outlined: Icons.home_outlined,
+            filled: Icons.home_rounded,
             label: 'Ana Sayfa',
           ),
-          NavigationDestination(
-            icon: Icon(Icons.calendar_month_outlined),
-            selectedIcon: Icon(Icons.calendar_month_rounded),
+          _NavItem(
+            outlined: Icons.calendar_month_outlined,
+            filled: Icons.calendar_month_rounded,
             label: 'Takvim',
           ),
         ],
@@ -94,6 +95,169 @@ class _OwnerHomeScreenState extends ConsumerState<OwnerHomeScreen> {
           _OwnerOverview(shopId: shopId, createdBy: appUser!.uid),
           RevenueCalendarScreen(shopId: shopId, createdBy: appUser.uid),
         ],
+      ),
+    );
+  }
+}
+
+class _NavItem {
+  const _NavItem({
+    required this.outlined,
+    required this.filled,
+    required this.label,
+  });
+  final IconData outlined;
+  final IconData filled;
+  final String label;
+}
+
+class _FloatingBottomNav extends StatelessWidget {
+  const _FloatingBottomNav({
+    required this.selectedIndex,
+    required this.onChanged,
+    required this.items,
+  });
+
+  final int selectedIndex;
+  final ValueChanged<int> onChanged;
+  final List<_NavItem> items;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return SafeArea(
+      top: false,
+      minimum: const EdgeInsets.only(bottom: 6),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
+        child: Container(
+          height: 62,
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: isDark
+                ? scheme.surfaceContainerHigh.withValues(alpha: 0.92)
+                : scheme.surface.withValues(alpha: 0.96),
+            borderRadius: BorderRadius.circular(40),
+            border: Border.all(
+              color: scheme.outlineVariant.withValues(alpha: 0.35),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.10),
+                blurRadius: 24,
+                offset: const Offset(0, 10),
+              ),
+              BoxShadow(
+                color: scheme.primary.withValues(alpha: 0.10),
+                blurRadius: 28,
+                spreadRadius: -4,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            children: List.generate(items.length, (i) {
+              final selected = i == selectedIndex;
+              final item = items[i];
+              return Expanded(
+                child: _NavTab(
+                  selected: selected,
+                  item: item,
+                  onTap: () => onChanged(i),
+                ),
+              );
+            }),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NavTab extends StatelessWidget {
+  const _NavTab({
+    required this.selected,
+    required this.item,
+    required this.onTap,
+  });
+
+  final bool selected;
+  final _NavItem item;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeOutCubic,
+        decoration: BoxDecoration(
+          gradient: selected
+              ? LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    scheme.primary,
+                    Color.alphaBlend(
+                      scheme.tertiary.withValues(alpha: 0.55),
+                      scheme.primary,
+                    ),
+                  ],
+                )
+              : null,
+          borderRadius: BorderRadius.circular(34),
+          boxShadow: selected
+              ? [
+                  BoxShadow(
+                    color: scheme.primary.withValues(alpha: 0.30),
+                    blurRadius: 14,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 220),
+              transitionBuilder: (child, anim) =>
+                  ScaleTransition(scale: anim, child: child),
+              child: Icon(
+                selected ? item.filled : item.outlined,
+                key: ValueKey(selected),
+                size: 22,
+                color: selected
+                    ? scheme.onPrimary
+                    : scheme.onSurfaceVariant,
+              ),
+            ),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 280),
+              curve: Curves.easeOutCubic,
+              child: selected
+                  ? Padding(
+                      padding: const EdgeInsets.only(left: 8, right: 4),
+                      child: Text(
+                        item.label,
+                        style: TextStyle(
+                          color: scheme.onPrimary,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13.5,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    )
+                  : const SizedBox.shrink(),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -115,7 +279,7 @@ class _OwnerOverview extends ConsumerWidget {
     ));
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 110),
       children: [
         _TodayCard(
           todayAsync: todayAsync,
@@ -125,14 +289,12 @@ class _OwnerOverview extends ConsumerWidget {
             createdBy: createdBy,
           ),
         ),
-        const SizedBox(height: 20),
-        Text(
-          'Bu Ay',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+        const SizedBox(height: 24),
+        _SectionHeader(
+          icon: Icons.calendar_view_month_rounded,
+          label: 'Bu Ay',
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 10),
         rangeAsync.when(
           loading: () => const Padding(
             padding: EdgeInsets.all(32),
@@ -141,10 +303,16 @@ class _OwnerOverview extends ConsumerWidget {
           error: (e, _) => Text('Hata: $e'),
           data: (revenues) {
             if (revenues.isEmpty) {
-              return const Card(
-                child: Padding(
-                  padding: EdgeInsets.all(20),
-                  child: Text('Bu ay henüz kayıt yok.'),
+              return _SoftCard(
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.event_note_outlined,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 12),
+                    const Text('Bu ay henüz kayıt yok.'),
+                  ],
                 ),
               );
             }
@@ -152,46 +320,17 @@ class _OwnerOverview extends ConsumerWidget {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text('Aylık toplam'),
-                        Text(
-                          Money.format(total),
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleLarge
-                              ?.copyWith(fontWeight: FontWeight.w700),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
+                _MonthTotalCard(total: total, days: revenues.length),
+                const SizedBox(height: 14),
                 ...revenues.map((r) => Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Card(
-                        child: ListTile(
-                          title: Text(DateKeys.human(DateTime.parse(r.dateKey))),
-                          subtitle: Text(
-                            'Nakit ${Money.format(r.cash)}  •  Kart ${Money.format(r.card)}',
-                          ),
-                          trailing: Text(
-                            Money.format(r.total),
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleMedium
-                                ?.copyWith(fontWeight: FontWeight.w700),
-                          ),
-                          onTap: () => RevenueEntrySheet.show(
-                            context,
-                            shopId: shopId,
-                            createdBy: createdBy,
-                            date: DateTime.parse(r.dateKey),
-                          ),
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: _DayRow(
+                        revenue: r,
+                        onTap: () => RevenueEntrySheet.show(
+                          context,
+                          shopId: shopId,
+                          createdBy: createdBy,
+                          date: DateTime.parse(r.dateKey),
                         ),
                       ),
                     )),
@@ -204,6 +343,202 @@ class _OwnerOverview extends ConsumerWidget {
   }
 }
 
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.icon, required this.label});
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(7),
+          decoration: BoxDecoration(
+            color: scheme.primaryContainer,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, size: 16, color: scheme.onPrimaryContainer),
+        ),
+        const SizedBox(width: 10),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.3,
+              ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SoftCard extends StatelessWidget {
+  const _SoftCard({required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: scheme.outlineVariant.withValues(alpha: 0.4),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: child,
+    );
+  }
+}
+
+class _MonthTotalCard extends StatelessWidget {
+  const _MonthTotalCard({required this.total, required this.days});
+  final double total;
+  final int days;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return _SoftCard(
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: scheme.primaryContainer,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(
+              Icons.trending_up_rounded,
+              color: scheme.onPrimaryContainer,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Aylık toplam',
+                  style: TextStyle(
+                    color: scheme.onSurfaceVariant,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '$days gün kayıtlı',
+                  style: TextStyle(
+                    color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
+                    fontSize: 11.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            Money.format(total),
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.5,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DayRow extends StatelessWidget {
+  const _DayRow({required this.revenue, required this.onTap});
+  final dynamic revenue;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Material(
+      color: scheme.surface,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: scheme.outlineVariant.withValues(alpha: 0.35),
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: scheme.secondaryContainer,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  Icons.event_rounded,
+                  color: scheme.onSecondaryContainer,
+                  size: 18,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      DateKeys.human(DateTime.parse(revenue.dateKey)),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Nakit ${Money.format(revenue.cash)}  •  Kart ${Money.format(revenue.card)}',
+                      style: TextStyle(
+                        color: scheme.onSurfaceVariant,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                Money.format(revenue.total),
+                style: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 15.5,
+                  letterSpacing: -0.3,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _TodayCard extends StatelessWidget {
   const _TodayCard({required this.todayAsync, required this.onEdit});
   final AsyncValue todayAsync;
@@ -212,39 +547,75 @@ class _TodayCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return Card(
-      color: scheme.primaryContainer,
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: todayAsync.when(
-          loading: () => const SizedBox(
-            height: 80,
-            child: Center(child: CircularProgressIndicator()),
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            scheme.primary,
+            Color.alphaBlend(
+              scheme.tertiary.withValues(alpha: 0.55),
+              scheme.primary,
+            ),
+          ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: scheme.primary.withValues(alpha: 0.30),
+            blurRadius: 26,
+            offset: const Offset(0, 12),
           ),
-          error: (e, _) => Text('Hata: $e'),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(22),
+        child: todayAsync.when(
+          loading: () => SizedBox(
+            height: 120,
+            child: Center(
+              child: CircularProgressIndicator(color: scheme.onPrimary),
+            ),
+          ),
+          error: (e, _) =>
+              Text('Hata: $e', style: TextStyle(color: scheme.onPrimary)),
           data: (rev) {
             if (rev == null) {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  _DateChip(date: DateKeys.human(DateKeys.today())),
+                  const SizedBox(height: 16),
                   Text(
-                    'Bugün için ciro girilmedi',
+                    'Bugün için\nciro girilmedi',
                     style: TextStyle(
-                      color: scheme.onPrimaryContainer,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 18,
+                      color: scheme.onPrimary,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 24,
+                      height: 1.15,
+                      letterSpacing: -0.5,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    DateKeys.human(DateKeys.today()),
-                    style: TextStyle(color: scheme.onPrimaryContainer),
-                  ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 18),
                   FilledButton.icon(
                     onPressed: onEdit,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: scheme.onPrimary,
+                      foregroundColor: scheme.primary,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 18,
+                        vertical: 12,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
                     icon: const Icon(Icons.add_rounded),
-                    label: const Text('Şimdi Gir'),
+                    label: const Text(
+                      'Şimdi Gir',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
                   ),
                 ],
               );
@@ -252,44 +623,60 @@ class _TodayCard extends StatelessWidget {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  DateKeys.human(DateKeys.today()),
-                  style: TextStyle(color: scheme.onPrimaryContainer),
-                ),
-                const SizedBox(height: 4),
+                _DateChip(date: DateKeys.human(DateKeys.today())),
+                const SizedBox(height: 14),
                 Text(
                   Money.format(rev.total),
                   style: TextStyle(
-                    color: scheme.onPrimaryContainer,
-                    fontSize: 36,
+                    color: scheme.onPrimary,
+                    fontSize: 40,
                     fontWeight: FontWeight.w800,
+                    letterSpacing: -1.2,
+                    height: 1.0,
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 4),
+                Text(
+                  'Bugünün cirosu',
+                  style: TextStyle(
+                    color: scheme.onPrimary.withValues(alpha: 0.75),
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 18),
                 Row(
                   children: [
                     Expanded(
                       child: _MiniStat(
+                        icon: Icons.payments_outlined,
                         label: 'Nakit',
                         value: Money.format(rev.cash),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: _MiniStat(
+                        icon: Icons.credit_card_rounded,
                         label: 'Kart',
                         value: Money.format(rev.card),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 6),
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton.icon(
                     onPressed: onEdit,
-                    icon: const Icon(Icons.edit_outlined),
-                    label: const Text('Düzenle'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: scheme.onPrimary,
+                    ),
+                    icon: const Icon(Icons.edit_outlined, size: 18),
+                    label: const Text(
+                      'Düzenle',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
                   ),
                 ),
               ],
@@ -301,8 +688,49 @@ class _TodayCard extends StatelessWidget {
   }
 }
 
+class _DateChip extends StatelessWidget {
+  const _DateChip({required this.date});
+  final String date;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: scheme.onPrimary.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.today_rounded,
+            color: scheme.onPrimary,
+            size: 14,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            date,
+            style: TextStyle(
+              color: scheme.onPrimary,
+              fontWeight: FontWeight.w600,
+              fontSize: 12.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _MiniStat extends StatelessWidget {
-  const _MiniStat({required this.label, required this.value});
+  const _MiniStat({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+  final IconData icon;
   final String label;
   final String value;
 
@@ -310,23 +738,40 @@ class _MiniStat extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: scheme.surface.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(12),
+        color: scheme.onPrimary.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label,
-              style: TextStyle(
-                color: scheme.onSurfaceVariant,
-                fontSize: 12,
-              )),
-          const SizedBox(height: 2),
+          Row(
+            children: [
+              Icon(
+                icon,
+                color: scheme.onPrimary.withValues(alpha: 0.85),
+                size: 14,
+              ),
+              const SizedBox(width: 5),
+              Text(
+                label,
+                style: TextStyle(
+                  color: scheme.onPrimary.withValues(alpha: 0.85),
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
           Text(
             value,
-            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+            style: TextStyle(
+              color: scheme.onPrimary,
+              fontWeight: FontWeight.w700,
+              fontSize: 15,
+            ),
           ),
         ],
       ),
