@@ -24,6 +24,7 @@ class EmployeeRepository {
     required String phone,
     required DateTime startDate,
     required String createdBy,
+    String? partnerId,
   }) async {
     await _col(shopId).add({
       'name': name,
@@ -31,6 +32,19 @@ class EmployeeRepository {
       'startDate': Timestamp.fromDate(startDate),
       'createdBy': createdBy,
       'createdAt': FieldValue.serverTimestamp(),
+      if (partnerId != null && partnerId.isNotEmpty) 'partnerId': partnerId,
+    });
+  }
+
+  Future<void> updatePartnerId({
+    required String shopId,
+    required String employeeId,
+    required String? partnerId,
+  }) {
+    return _col(shopId).doc(employeeId).update({
+      'partnerId': (partnerId == null || partnerId.isEmpty)
+          ? FieldValue.delete()
+          : partnerId,
     });
   }
 

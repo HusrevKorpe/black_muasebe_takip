@@ -2,15 +2,22 @@ import '../../../models/expense.dart';
 import '../../../models/revenue.dart';
 
 class PartnerShare {
+  final String partnerId;
   final String partnerName;
   final double percentage;
   final double amount;
+  final double deductions;
 
   const PartnerShare({
+    required this.partnerId,
     required this.partnerName,
     required this.percentage,
     required this.amount,
+    this.deductions = 0,
   });
+
+  double get netAmount => amount - deductions;
+  bool get hasDeductions => deductions > 0;
 }
 
 class MonthlyReport {

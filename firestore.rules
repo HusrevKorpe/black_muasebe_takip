@@ -104,10 +104,29 @@ service cloud.firestore {
           && request.resource.data.startDate is timestamp
           && request.resource.data.createdBy == request.auth.uid;
 
-        // Şimdilik düzenleme yok — sil/yeniden ekle akışı.
-        allow update: if false;
+        // Sadece partnerId alanı güncellenebilir (ortağa bağla / bağı kaldır).
+        allow update: if isOwnerOf(shopId)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['partnerId']);
 
         allow delete: if isOwnerOf(shopId);
+
+        // ---------- shops/{shopId}/employees/{empId}/ledger ----------
+        // Avans / borç / ödeme kayıtları. Owner ekler/siler, boss salt-okur.
+        match /ledger/{entryId} {
+          allow read: if isOwnerOf(shopId) || isBoss();
+
+          allow create: if isOwnerOf(shopId)
+            && request.resource.data.type in ['avans', 'borc', 'odeme']
+            && request.resource.data.amount is number
+            && request.resource.data.amount > 0
+            && request.resource.data.date is timestamp
+            && request.resource.data.createdBy == request.auth.uid;
+
+          // Düzenleme yok — yanlış kayıtlar silinip yeniden eklenir.
+          allow update: if false;
+
+          allow delete: if isOwnerOf(shopId);
+        }
       }
     }
   }

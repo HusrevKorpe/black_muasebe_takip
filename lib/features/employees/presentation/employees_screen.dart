@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../../models/employee.dart';
 import '../providers/employee_providers.dart';
+import 'employee_detail_sheet.dart';
 import 'employee_form_sheet.dart';
 
 class EmployeesScreen extends ConsumerWidget {
@@ -61,14 +62,42 @@ class EmployeesScreen extends ConsumerWidget {
                 child: Card(
                   child: ListTile(
                     leading: CircleAvatar(child: Text(_initials(e.name))),
-                    title: Text(
-                      e.name,
-                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    title: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            e.name,
+                            style: const TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                        if (e.isPartner)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.primaryContainer,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              'Ortak',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: Theme.of(context).colorScheme.onPrimaryContainer,
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                     subtitle: Text(
                       '${e.phone}\nBaşlangıç: ${DateFormat('d MMM yyyy', 'tr_TR').format(e.startDate)}',
                     ),
                     isThreeLine: true,
+                    onTap: () => EmployeeDetailSheet.show(
+                      context,
+                      employee: e,
+                      canEdit: canEdit,
+                    ),
                     trailing: canEdit
                         ? IconButton(
                             icon: const Icon(Icons.delete_outline_rounded),

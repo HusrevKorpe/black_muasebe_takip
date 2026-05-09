@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../auth/providers/auth_providers.dart';
+import '../../shop/providers/shop_providers.dart';
 import '../providers/employee_providers.dart';
 
 class EmployeeFormSheet extends ConsumerStatefulWidget {
@@ -29,6 +30,7 @@ class _EmployeeFormSheetState extends ConsumerState<EmployeeFormSheet> {
   final _nameCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
   DateTime _startDate = DateTime.now();
+  String? _partnerId;
   bool _saving = false;
 
   @override
@@ -69,6 +71,7 @@ class _EmployeeFormSheetState extends ConsumerState<EmployeeFormSheet> {
             phone: _phoneCtrl.text.trim(),
             startDate: _startDate,
             createdBy: appUser.uid,
+            partnerId: _partnerId,
           );
       if (mounted) Navigator.of(context).pop();
     } catch (err) {
@@ -84,6 +87,8 @@ class _EmployeeFormSheetState extends ConsumerState<EmployeeFormSheet> {
   @override
   Widget build(BuildContext context) {
     final dateLabel = DateFormat('d MMMM yyyy', 'tr_TR').format(_startDate);
+    final shopAsync = ref.watch(shopByIdProvider(widget.shopId));
+    final partners = shopAsync.value?.partners ?? const [];
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
@@ -148,6 +153,30 @@ class _EmployeeFormSheetState extends ConsumerState<EmployeeFormSheet> {
                   ),
                 ),
               ),
+              if (partners.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String?>(
+                  initialValue: _partnerId,
+                  isExpanded: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Ortaklardan biri mi? (opsiyonel)',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: [
+                    const DropdownMenuItem<String?>(
+                      value: null,
+                      child: Text('Ortak değil'),
+                    ),
+                    ...partners.map(
+                      (p) => DropdownMenuItem<String?>(
+                        value: p.id,
+                        child: Text('${p.name} (%${p.percentage.toStringAsFixed(0)})'),
+                      ),
+                    ),
+                  ],
+                  onChanged: (v) => setState(() => _partnerId = v),
+                ),
+              ],
               const SizedBox(height: 20),
               FilledButton.icon(
                 onPressed: _saving ? null : _save,

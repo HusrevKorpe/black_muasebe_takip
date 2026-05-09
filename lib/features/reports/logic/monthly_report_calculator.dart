@@ -1,3 +1,5 @@
+import '../../../models/employee.dart';
+import '../../../models/employee_ledger_entry.dart';
 import '../../../models/expense.dart';
 import '../../../models/revenue.dart';
 import '../../../models/shop.dart';
@@ -18,6 +20,8 @@ MonthlyReport calculateMonthlyReport({
   required List<Expense> expenses,
   required int year,
   required int month,
+  List<Employee> employees = const [],
+  Map<String, List<EmployeeLedgerEntry>> ledgersByEmployee = const {},
 }) {
   final monthRevenues = revenues
       .where((r) => _isInMonth(r.dateKey, year, month))
@@ -35,13 +39,30 @@ MonthlyReport calculateMonthlyReport({
   final totalExpense = monthExpenses.fold(0.0, (acc, e) => acc + e.amount);
   final netProfit = totalRevenue - totalExpense;
 
-  final shares = shop.partners
-      .map((p) => PartnerShare(
-            partnerName: p.name,
-            percentage: p.percentage,
-            amount: netProfit * (p.percentage / 100),
-          ))
-      .toList();
+  // Ay sonunun bir sonrası: bu tarih ve sonrası dahil edilmez.
+  final cutoff = DateTime(year, month + 1, 1);
+
+  final shares = shop.partners.map((p) {
+    final partnerEmployees =
+        employees.where((e) => e.partnerId == p.id).toList();
+    var balance = 0.0;
+    for (final emp in partnerEmployees) {
+      final entries = ledgersByEmployee[emp.id] ?? const [];
+      for (final entry in entries) {
+        if (entry.date.isBefore(cutoff)) {
+          balance += entry.signedAmount;
+        }
+      }
+    }
+    final deductions = balance > 0 ? balance : 0.0;
+    return PartnerShare(
+      partnerId: p.id,
+      partnerName: p.name,
+      percentage: p.percentage,
+      amount: netProfit * (p.percentage / 100),
+      deductions: deductions,
+    );
+  }).toList();
 
   return MonthlyReport(
     shopId: shop.id,

@@ -104,22 +104,32 @@ class ExcelExportService {
     s.setColumnWidth(0, 24);
     s.setColumnWidth(1, 12);
     s.setColumnWidth(2, 18);
+    s.setColumnWidth(3, 16);
+    s.setColumnWidth(4, 18);
 
     _setText(s, 0, 0, 'Ortak', style: _headerStyle());
     _setText(s, 0, 1, 'Yüzde', style: _headerStyle());
     _setText(s, 0, 2, 'Pay', style: _headerStyle());
+    _setText(s, 0, 3, 'Borç Kesintisi', style: _headerStyle());
+    _setText(s, 0, 4, 'Net', style: _headerStyle());
 
     if (r.shares.isEmpty) {
       _setText(s, 1, 0, 'Bu dükkan için ortak tanımlı değil');
       return;
     }
 
+    var totalDeductions = 0.0;
+    var totalNet = 0.0;
     for (var i = 0; i < r.shares.length; i++) {
       final share = r.shares[i];
       final row = i + 1;
       _setText(s, row, 0, share.partnerName);
       _setPercentage(s, row, 1, share.percentage);
       _setMoney(s, row, 2, share.amount);
+      _setMoney(s, row, 3, share.deductions);
+      _setMoney(s, row, 4, share.netAmount, bold: true);
+      totalDeductions += share.deductions;
+      totalNet += share.netAmount;
     }
 
     // Toplam satırı
@@ -127,6 +137,8 @@ class ExcelExportService {
     _setText(s, totalRow, 0, 'Toplam', style: _boldStyle());
     _setPercentage(s, totalRow, 1, 100, bold: true);
     _setMoney(s, totalRow, 2, r.netProfit, bold: true);
+    _setMoney(s, totalRow, 3, totalDeductions, bold: true);
+    _setMoney(s, totalRow, 4, totalNet, bold: true);
   }
 
   static void _buildRevenueSheet(Excel excel, MonthlyReport r) {

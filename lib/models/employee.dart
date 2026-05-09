@@ -8,6 +8,7 @@ class Employee {
   final DateTime startDate;
   final String createdBy;
   final DateTime? createdAt;
+  final String? partnerId;
 
   const Employee({
     required this.id,
@@ -17,7 +18,10 @@ class Employee {
     required this.startDate,
     required this.createdBy,
     this.createdAt,
+    this.partnerId,
   });
+
+  bool get isPartner => partnerId != null && partnerId!.isNotEmpty;
 
   factory Employee.fromDoc(
     String shopId,
@@ -28,6 +32,7 @@ class Employee {
     final start = ts is Timestamp
         ? ts.toDate()
         : (ts is String ? DateTime.tryParse(ts) ?? DateTime.now() : DateTime.now());
+    final pid = data['partnerId'] as String?;
     return Employee(
       id: doc.id,
       shopId: shopId,
@@ -36,6 +41,7 @@ class Employee {
       startDate: start,
       createdBy: data['createdBy'] as String? ?? '',
       createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
+      partnerId: (pid == null || pid.isEmpty) ? null : pid,
     );
   }
 
@@ -45,5 +51,6 @@ class Employee {
         'startDate': Timestamp.fromDate(startDate),
         'createdBy': createdBy,
         'createdAt': FieldValue.serverTimestamp(),
+        if (partnerId != null && partnerId!.isNotEmpty) 'partnerId': partnerId,
       };
 }

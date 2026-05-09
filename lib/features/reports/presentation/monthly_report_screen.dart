@@ -3,9 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/utils/money.dart';
+import '../../../models/employee.dart';
+import '../../../models/employee_ledger_entry.dart';
 import '../../../models/expense.dart';
 import '../../../models/revenue.dart';
 import '../../../models/shop.dart';
+import '../../employees/providers/employee_providers.dart';
 import '../../expense/providers/expense_providers.dart';
 import '../../revenue/providers/revenue_providers.dart';
 import '../../shop/providers/shop_providers.dart';
@@ -86,8 +89,33 @@ class _MonthlyReportScreenState extends ConsumerState<MonthlyReportScreen> {
     final expensesAsync = ref.watch(expenseRangeProvider(
       ExpenseRangeArgs(shopId: widget.shopId, from: from, to: to),
     ));
+    final employeesAsync = ref.watch(employeesProvider(widget.shopId));
 
-    final report = _tryBuildReport(shopAsync, revenuesAsync, expensesAsync);
+    final partneredEmployees = (employeesAsync.value ?? const <Employee>[])
+        .where((e) => e.isPartner)
+        .toList();
+
+    final ledgersByEmployee = <String, List<EmployeeLedgerEntry>>{};
+    var ledgersReady = true;
+    for (final emp in partneredEmployees) {
+      final async = ref.watch(employeeLedgerProvider(
+        (shopId: widget.shopId, employeeId: emp.id),
+      ));
+      final value = async.value;
+      if (value == null) {
+        ledgersReady = false;
+      } else {
+        ledgersByEmployee[emp.id] = value;
+      }
+    }
+
+    final report = _tryBuildReport(
+      shopAsync,
+      revenuesAsync,
+      expensesAsync,
+      employees: employeesAsync.value,
+      ledgersByEmployee: ledgersReady ? ledgersByEmployee : null,
+    );
     final canExport = report != null && !_exporting;
 
     return Scaffold(
@@ -131,18 +159,23 @@ class _MonthlyReportScreenState extends ConsumerState<MonthlyReportScreen> {
   MonthlyReport? _tryBuildReport(
     AsyncValue<Shop?> shopAsync,
     AsyncValue<List<Revenue>> revenuesAsync,
-    AsyncValue<List<Expense>> expensesAsync,
-  ) {
+    AsyncValue<List<Expense>> expensesAsync, {
+    List<Employee>? employees,
+    Map<String, List<EmployeeLedgerEntry>>? ledgersByEmployee,
+  }) {
     final shop = shopAsync.value;
     final revenues = revenuesAsync.value;
     final expenses = expensesAsync.value;
     if (shop == null || revenues == null || expenses == null) return null;
+    if (ledgersByEmployee == null) return null;
     return calculateMonthlyReport(
       shop: shop,
       revenues: revenues,
       expenses: expenses,
       year: _year,
       month: _month,
+      employees: employees ?? const [],
+      ledgersByEmployee: ledgersByEmployee,
     );
   }
 
@@ -343,9 +376,6 @@ class _SharesCard extends StatelessWidget {
   const _SharesCard({required this.report});
   final MonthlyReport report;
 
-  String _formatPct(double v) =>
-      v == v.roundToDouble() ? v.toStringAsFixed(0) : v.toStringAsFixed(2);
-
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
@@ -394,51 +424,99 @@ class _SharesCard extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             ...report.shares.expand((share) => [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Row(
-                          children: [
-                            CircleAvatar(
-                              radius: 16,
-                              backgroundColor: scheme.secondaryContainer,
-                              child: Text(
-                                '%${_formatPct(share.percentage)}',
-                                style: TextStyle(
-                                  color: scheme.onSecondaryContainer,
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 11,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                share.partnerName,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Text(
-                        Money.format(share.amount),
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          color: share.amount < 0 ? scheme.error : null,
-                        ),
-                      ),
-                    ],
-                  ),
+                  _ShareRow(share: share),
                   const SizedBox(height: 12),
                 ]),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _ShareRow extends StatelessWidget {
+  const _ShareRow({required this.share});
+  final PartnerShare share;
+
+  String _formatPct(double v) =>
+      v == v.roundToDouble() ? v.toStringAsFixed(0) : v.toStringAsFixed(2);
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 16,
+                    backgroundColor: scheme.secondaryContainer,
+                    child: Text(
+                      '%${_formatPct(share.percentage)}',
+                      style: TextStyle(
+                        color: scheme.onSecondaryContainer,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      share.partnerName,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Text(
+              Money.format(share.hasDeductions ? share.netAmount : share.amount),
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 16,
+                color: share.netAmount < 0
+                    ? scheme.error
+                    : share.hasDeductions
+                        ? scheme.primary
+                        : null,
+              ),
+            ),
+          ],
+        ),
+        if (share.hasDeductions) ...[
+          const SizedBox(height: 6),
+          Padding(
+            padding: const EdgeInsets.only(left: 44),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Pay: ${Money.format(share.amount)}',
+                  style: TextStyle(
+                    color: scheme.onSurfaceVariant,
+                    fontSize: 12,
+                  ),
+                ),
+                Text(
+                  'Borç: −${Money.format(share.deductions)}',
+                  style: TextStyle(
+                    color: scheme.error,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

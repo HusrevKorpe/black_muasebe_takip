@@ -46,7 +46,6 @@ class _RevenueEntrySheetState extends ConsumerState<RevenueEntrySheet> {
   final _formKey = GlobalKey<FormState>();
   final _cashCtrl = TextEditingController();
   final _cardCtrl = TextEditingController();
-  final _noteCtrl = TextEditingController();
   bool _saving = false;
   String? _error;
   late DateTime _date;
@@ -70,11 +69,9 @@ class _RevenueEntrySheetState extends ConsumerState<RevenueEntrySheet> {
     if (existing != null) {
       _cashCtrl.text = Money.forEdit(existing.cash);
       _cardCtrl.text = Money.forEdit(existing.card);
-      _noteCtrl.text = existing.note ?? '';
     } else {
       _cashCtrl.clear();
       _cardCtrl.clear();
-      _noteCtrl.clear();
     }
     setState(() => _loading = false);
   }
@@ -102,7 +99,6 @@ class _RevenueEntrySheetState extends ConsumerState<RevenueEntrySheet> {
   void dispose() {
     _cashCtrl.dispose();
     _cardCtrl.dispose();
-    _noteCtrl.dispose();
     super.dispose();
   }
 
@@ -124,7 +120,6 @@ class _RevenueEntrySheetState extends ConsumerState<RevenueEntrySheet> {
             cash: _cash,
             card: _card,
             createdBy: widget.createdBy,
-            note: _noteCtrl.text.trim(),
           );
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
@@ -281,15 +276,6 @@ class _RevenueEntrySheetState extends ConsumerState<RevenueEntrySheet> {
                           ),
                         ),
                       ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _noteCtrl,
-                    maxLines: 2,
-                    decoration: const InputDecoration(
-                      labelText: 'Not (opsiyonel)',
-                      prefixIcon: Icon(Icons.note_outlined),
                     ),
                   ),
                   if (_existing != null && _existing!.editHistory.isNotEmpty) ...[
