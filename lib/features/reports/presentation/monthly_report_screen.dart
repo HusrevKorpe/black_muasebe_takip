@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -62,9 +63,13 @@ class _MonthlyReportScreenState extends ConsumerState<MonthlyReportScreen> {
   }
 
   Future<void> _exportToExcel(MonthlyReport report) async {
+    final pct = await _askCardTaxPct();
+    if (pct == null) return;
+    if (!mounted) return;
+
     setState(() => _exporting = true);
     try {
-      final file = await ExcelExportService.generate(report);
+      final file = await ExcelExportService.generate(report, cardTaxPct: pct);
       if (!mounted) return;
       await ExcelExportService.share(file, context);
     } catch (err) {
@@ -76,6 +81,13 @@ class _MonthlyReportScreenState extends ConsumerState<MonthlyReportScreen> {
     } finally {
       if (mounted) setState(() => _exporting = false);
     }
+  }
+
+  Future<double?> _askCardTaxPct() {
+    return showDialog<double>(
+      context: context,
+      builder: (_) => const _CardTaxDialog(),
+    );
   }
 
   @override
@@ -541,6 +553,414 @@ class _EmptyMonthNotice extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _CardTaxDialog extends StatefulWidget {
+  const _CardTaxDialog();
+
+  @override
+  State<_CardTaxDialog> createState() => _CardTaxDialogState();
+}
+
+class _CardTaxDialogState extends State<_CardTaxDialog> {
+  static const _quickPicks = <double>[2.5, 3.75, 4.25];
+
+  final _controller = TextEditingController();
+  final _focus = FocusNode();
+  String? _errorText;
+  double? _selectedPick;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focus.dispose();
+    super.dispose();
+  }
+
+  double? _parse() {
+    final raw = _controller.text
+        .trim()
+        .replaceAll('/', '.')
+        .replaceAll(',', '.');
+    if (raw.isEmpty) return 0;
+    final v = double.tryParse(raw);
+    if (v == null || v < 0 || v > 100) return null;
+    return v;
+  }
+
+  void _applyQuickPick(double value) {
+    final formatted = value == value.roundToDouble()
+        ? value.toStringAsFixed(0)
+        : value.toString().replaceAll('.', ',');
+    setState(() {
+      _controller.text = formatted;
+      _controller.selection = TextSelection.fromPosition(
+        TextPosition(offset: _controller.text.length),
+      );
+      _selectedPick = value;
+      _errorText = null;
+    });
+  }
+
+  void _submit() {
+    final v = _parse();
+    if (v == null) {
+      setState(() => _errorText = '0 ile 100 arası geçerli bir sayı girin');
+      return;
+    }
+    Navigator.of(context).pop(v);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return Dialog(
+      backgroundColor: scheme.surface,
+      surfaceTintColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      clipBehavior: Clip.antiAlias,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 360),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _buildHeader(scheme),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Bu ay banka tarafından kart toplamından kesilen vergi yüzdesini girin.',
+                    style: TextStyle(
+                      color: scheme.onSurfaceVariant,
+                      height: 1.35,
+                      fontSize: 13,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  _buildQuickPicks(scheme),
+                  const SizedBox(height: 14),
+                  _buildInput(scheme),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        size: 12,
+                        color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
+                      ),
+                      const SizedBox(width: 5),
+                      Expanded(
+                        child: Text(
+                          'Boş bırakırsanız vergi uygulanmaz.',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color:
+                                scheme.onSurfaceVariant.withValues(alpha: 0.8),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size.fromHeight(42),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            side: BorderSide(
+                              color: scheme.outlineVariant,
+                            ),
+                            foregroundColor: scheme.onSurface,
+                            textStyle: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          child: const Text('İptal'),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        flex: 2,
+                        child: FilledButton.icon(
+                          onPressed: _submit,
+                          style: FilledButton.styleFrom(
+                            minimumSize: const Size.fromHeight(42),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            textStyle: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          icon: const Icon(Icons.download_rounded, size: 18),
+                          label: const Text('Excel İndir'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(ColorScheme scheme) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            scheme.primary,
+            Color.lerp(scheme.primary, scheme.tertiary, 0.55) ?? scheme.primary,
+          ],
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.18),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.25),
+                width: 1,
+              ),
+            ),
+            child: const Icon(
+              Icons.percent_rounded,
+              color: Colors.white,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Kart Vergisi',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.1,
+                  ),
+                ),
+                SizedBox(height: 1),
+                Text(
+                  'Excel raporuna uygulansın',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickPicks(ColorScheme scheme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Hızlı seçim',
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: scheme.onSurfaceVariant,
+            letterSpacing: 0.3,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: _quickPicks.map((pct) {
+            final selected = _selectedPick == pct;
+            final label =
+                '%${pct.toString().replaceAll('.', ',')}';
+            return _QuickPickChip(
+              label: label,
+              selected: selected,
+              onTap: () => _applyQuickPick(pct),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInput(ColorScheme scheme) {
+    return TextField(
+      controller: _controller,
+      focusNode: _focus,
+      autofocus: true,
+      autocorrect: false,
+      enableSuggestions: false,
+      textAlign: TextAlign.center,
+      style: TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w700,
+        color: scheme.onSurface,
+        letterSpacing: 0.2,
+      ),
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      inputFormatters: [_SlashToCommaFormatter()],
+      decoration: InputDecoration(
+        hintText: '0,0',
+        hintStyle: TextStyle(
+          color: scheme.onSurfaceVariant.withValues(alpha: 0.5),
+          fontWeight: FontWeight.w500,
+          fontSize: 14,
+        ),
+        prefixIcon: Padding(
+          padding: const EdgeInsets.only(left: 12, right: 4),
+          child: Icon(
+            Icons.percent_rounded,
+            color: scheme.primary,
+            size: 16,
+          ),
+        ),
+        prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+        suffixIcon: Padding(
+          padding: const EdgeInsets.only(right: 12),
+          child: Text(
+            '%',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: scheme.primary,
+            ),
+          ),
+        ),
+        suffixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+        contentPadding: const EdgeInsets.symmetric(vertical: 10),
+        isDense: true,
+        filled: true,
+        fillColor: scheme.surfaceContainerHighest.withValues(alpha: 0.6),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: scheme.primary, width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: scheme.error, width: 1.2),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: scheme.error, width: 1.5),
+        ),
+        errorText: _errorText,
+        errorStyle: TextStyle(
+          fontSize: 11,
+          color: scheme.error,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      onChanged: (_) {
+        if (_selectedPick != null || _errorText != null) {
+          setState(() {
+            _selectedPick = null;
+            _errorText = null;
+          });
+        }
+      },
+      onSubmitted: (_) => _submit(),
+    );
+  }
+}
+
+class _QuickPickChip extends StatelessWidget {
+  const _QuickPickChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Material(
+      color: selected
+          ? scheme.primary
+          : scheme.surfaceContainerHighest.withValues(alpha: 0.6),
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: selected
+                  ? Colors.transparent
+                  : scheme.outlineVariant.withValues(alpha: 0.5),
+              width: 1,
+            ),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: selected ? scheme.onPrimary : scheme.onSurface,
+              letterSpacing: 0.1,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SlashToCommaFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    if (!newValue.text.contains('/')) return newValue;
+    return TextEditingValue(
+      text: newValue.text.replaceAll('/', ','),
+      selection: newValue.selection,
+      composing: TextRange.empty,
     );
   }
 }

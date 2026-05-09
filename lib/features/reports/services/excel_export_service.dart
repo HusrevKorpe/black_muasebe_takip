@@ -15,11 +15,20 @@ class ExcelExportService {
   ];
 
   /// Aylık raporu xlsx dosyası olarak üretir, dosya yolunu döner.
-  static Future<File> generate(MonthlyReport report) async {
+  ///
+  /// [cardTaxPct] verilirse (yüzde, örn 2.5) kart toplamı üzerinden vergi
+  /// hesaplanır ve net kâr / ortak payları bu vergi düşülmüş haliyle yazılır.
+  static Future<File> generate(
+    MonthlyReport report, {
+    double cardTaxPct = 0,
+  }) async {
+    final taxAmount = cardTaxPct > 0 ? report.totalCard * cardTaxPct / 100 : 0.0;
+    final adjustedNetProfit = report.netProfit - taxAmount;
+
     final excel = Excel.createExcel();
 
-    _buildSummarySheet(excel, report);
-    _buildSharesSheet(excel, report);
+    _buildSummarySheet(excel, report, cardTaxPct, taxAmount, adjustedNetProfit);
+    _buildSharesSheet(excel, report, adjustedNetProfit);
     _buildRevenueSheet(excel, report);
     _buildExpenseSheet(excel, report);
 
@@ -57,9 +66,15 @@ class ExcelExportService {
 
   // ---------- sheet builders ----------
 
-  static void _buildSummarySheet(Excel excel, MonthlyReport r) {
+  static void _buildSummarySheet(
+    Excel excel,
+    MonthlyReport r,
+    double cardTaxPct,
+    double taxAmount,
+    double adjustedNetProfit,
+  ) {
     final s = excel['Özet'];
-    s.setColumnWidth(0, 22);
+    s.setColumnWidth(0, 26);
     s.setColumnWidth(1, 18);
 
     var row = 0;
@@ -93,13 +108,27 @@ class ExcelExportService {
     row += 1;
     _setText(s, row, 0, 'Toplam Gider', style: _boldStyle());
     _setMoney(s, row, 1, r.totalExpense, bold: true);
-    row += 2;
+    row += 1;
+    if (cardTaxPct > 0) {
+      _setText(s, row, 0, 'Kart Vergisi (%${_formatPct(cardTaxPct)})');
+      _setMoney(s, row, 1, taxAmount);
+      row += 1;
+    }
+    row += 1;
 
-    _setText(s, row, 0, r.isLoss ? 'Net Zarar' : 'Net Kâr', style: _sectionStyle());
-    _setMoney(s, row, 1, r.netProfit, bold: true);
+    final isLoss = adjustedNetProfit < 0;
+    final label = cardTaxPct > 0
+        ? (isLoss ? 'Net Zarar (Vergi Sonrası)' : 'Net Kâr (Vergi Sonrası)')
+        : (isLoss ? 'Net Zarar' : 'Net Kâr');
+    _setText(s, row, 0, label, style: _sectionStyle());
+    _setMoney(s, row, 1, adjustedNetProfit, bold: true);
   }
 
-  static void _buildSharesSheet(Excel excel, MonthlyReport r) {
+  static void _buildSharesSheet(
+    Excel excel,
+    MonthlyReport r,
+    double adjustedNetProfit,
+  ) {
     final s = excel['Ortaklık Dağılımı'];
     s.setColumnWidth(0, 24);
     s.setColumnWidth(1, 12);
@@ -120,23 +149,27 @@ class ExcelExportService {
 
     var totalDeductions = 0.0;
     var totalNet = 0.0;
+    var totalAmount = 0.0;
     for (var i = 0; i < r.shares.length; i++) {
       final share = r.shares[i];
       final row = i + 1;
+      final amount = adjustedNetProfit * share.percentage / 100;
+      final netAmount = amount - share.deductions;
       _setText(s, row, 0, share.partnerName);
       _setPercentage(s, row, 1, share.percentage);
-      _setMoney(s, row, 2, share.amount);
+      _setMoney(s, row, 2, amount);
       _setMoney(s, row, 3, share.deductions);
-      _setMoney(s, row, 4, share.netAmount, bold: true);
+      _setMoney(s, row, 4, netAmount, bold: true);
+      totalAmount += amount;
       totalDeductions += share.deductions;
-      totalNet += share.netAmount;
+      totalNet += netAmount;
     }
 
     // Toplam satırı
     final totalRow = r.shares.length + 1;
     _setText(s, totalRow, 0, 'Toplam', style: _boldStyle());
     _setPercentage(s, totalRow, 1, 100, bold: true);
-    _setMoney(s, totalRow, 2, r.netProfit, bold: true);
+    _setMoney(s, totalRow, 2, totalAmount, bold: true);
     _setMoney(s, totalRow, 3, totalDeductions, bold: true);
     _setMoney(s, totalRow, 4, totalNet, bold: true);
   }
@@ -279,6 +312,9 @@ class ExcelExportService {
       );
 
   static CellStyle _boldStyle() => CellStyle(bold: true);
+
+  static String _formatPct(double v) =>
+      v == v.roundToDouble() ? v.toStringAsFixed(0) : v.toStringAsFixed(2);
 
   static String _formatDate(String dateKey) {
     try {
