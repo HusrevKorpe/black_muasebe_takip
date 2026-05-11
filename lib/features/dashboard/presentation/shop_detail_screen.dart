@@ -240,7 +240,7 @@ class ShopDetailScreen extends ConsumerWidget {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  'Nakit ${Money.format(r.cash)}  •  Kart ${Money.format(r.card)}',
+                                  'Nakit ${Money.format(r.cash)}  •  Kart ${Money.format(r.card)}',
                                   style: TextStyle(
                                     color: scheme.onSurfaceVariant,
                                     fontSize: 12,
