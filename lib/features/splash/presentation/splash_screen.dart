@@ -60,11 +60,19 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? const Color(0xFF0A0A0A) : const Color(0xFFFAFAFA);
+    final titleColor = isDark ? Colors.white : const Color(0xFF111111);
+    final subtitleColor = isDark ? const Color(0xFFB0B0B0) : const Color(0xFF5A5A5A);
+    final messageColor = isDark ? const Color(0xFF8A8A8A) : const Color(0xFF707070);
+    final spinnerColor =
+        isDark ? const Color(0xFFE9C46A) : Theme.of(context).colorScheme.primary;
+
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0A),
+      backgroundColor: bgColor,
       body: Stack(
         children: [
-          const Positioned.fill(child: _BackgroundAura()),
+          Positioned.fill(child: _BackgroundAura(isDark: isDark)),
           Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -81,22 +89,22 @@ class _SplashScreenState extends State<SplashScreen>
                   position: _textSlide,
                   child: FadeTransition(
                     opacity: _textFade,
-                    child: const Column(
+                    child: Column(
                       children: [
                         Text(
                           'Black Muasebe',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: titleColor,
                             fontSize: 28,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 1.4,
                           ),
                         ),
-                        SizedBox(height: 8),
+                        const SizedBox(height: 8),
                         Text(
                           'Dükkan ciro takibi',
                           style: TextStyle(
-                            color: Color(0xFFB0B0B0),
+                            color: subtitleColor,
                             fontSize: 14,
                             letterSpacing: 0.6,
                           ),
@@ -117,22 +125,20 @@ class _SplashScreenState extends State<SplashScreen>
                 opacity: _textFade,
                 child: Column(
                   children: [
-                    const SizedBox(
+                    SizedBox(
                       width: 28,
                       height: 28,
                       child: CircularProgressIndicator(
                         strokeWidth: 2.4,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          Color(0xFFE9C46A),
-                        ),
+                        valueColor: AlwaysStoppedAnimation<Color>(spinnerColor),
                       ),
                     ),
                     if (widget.message != null) ...[
                       const SizedBox(height: 14),
                       Text(
                         widget.message!,
-                        style: const TextStyle(
-                          color: Color(0xFF8A8A8A),
+                        style: TextStyle(
+                          color: messageColor,
                           fontSize: 12,
                           letterSpacing: 0.4,
                         ),
@@ -150,17 +156,25 @@ class _SplashScreenState extends State<SplashScreen>
 }
 
 class _BackgroundAura extends StatelessWidget {
-  const _BackgroundAura();
+  const _BackgroundAura({required this.isDark});
+  final bool isDark;
 
   @override
   Widget build(BuildContext context) {
+    final gradient = isDark
+        ? const RadialGradient(
+            colors: [Color(0xFF1A1A1A), Color(0xFF0A0A0A)],
+            radius: 1.1,
+          )
+        : const RadialGradient(
+            colors: [Color(0xFFFFFFFF), Color(0xFFEDEDED)],
+            radius: 1.1,
+          );
+    final auraColor = isDark
+        ? const Color(0xFFD4A017).withValues(alpha: 0.18)
+        : Theme.of(context).colorScheme.primary.withValues(alpha: 0.12);
     return DecoratedBox(
-      decoration: const BoxDecoration(
-        gradient: RadialGradient(
-          colors: [Color(0xFF1A1A1A), Color(0xFF0A0A0A)],
-          radius: 1.1,
-        ),
-      ),
+      decoration: BoxDecoration(gradient: gradient),
       child: Stack(
         children: [
           Positioned.fill(
@@ -172,10 +186,7 @@ class _BackgroundAura extends StatelessWidget {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
-                      colors: [
-                        const Color(0xFFD4A017).withValues(alpha: 0.18),
-                        Colors.transparent,
-                      ],
+                      colors: [auraColor, Colors.transparent],
                     ),
                   ),
                 ),

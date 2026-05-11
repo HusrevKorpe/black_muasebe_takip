@@ -7,6 +7,7 @@ import '../features/auth/presentation/login_screen.dart';
 import '../features/auth/providers/auth_providers.dart';
 import '../features/dashboard/presentation/boss_home_screen.dart';
 import '../features/revenue/presentation/owner_home_screen.dart';
+import '../features/settings/providers/theme_providers.dart';
 import '../features/splash/presentation/splash_screen.dart';
 
 class MuasebeApp extends ConsumerWidget {
@@ -14,12 +15,13 @@ class MuasebeApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(themeModeProvider);
     return MaterialApp(
       title: 'Black Muasebe',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
-      themeMode: ThemeMode.system,
+      themeMode: themeMode,
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
