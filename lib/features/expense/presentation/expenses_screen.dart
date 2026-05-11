@@ -265,14 +265,15 @@ class _CashInRegisterCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const green = Color(0xFF1B873F);
-    const greenSoft = Color(0xFFE6F4EA);
+    final scheme = Theme.of(context).colorScheme;
+    final bg = scheme.primaryContainer;
+    final fg = scheme.onPrimaryContainer;
     return Card(
       elevation: 0,
-      color: greenSoft,
+      color: bg,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: green.withValues(alpha: 0.35)),
+        side: BorderSide(color: fg.withValues(alpha: 0.25)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -282,12 +283,12 @@ class _CashInRegisterCard extends StatelessWidget {
               width: 42,
               height: 42,
               decoration: BoxDecoration(
-                color: green.withValues(alpha: 0.18),
+                color: fg.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.savings_outlined,
-                color: green,
+                color: fg,
               ),
             ),
             const SizedBox(width: 14),
@@ -295,10 +296,10 @@ class _CashInRegisterCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Kasadaki Nakit Para',
                     style: TextStyle(
-                      color: green,
+                      color: fg,
                       fontWeight: FontWeight.w700,
                       fontSize: 14,
                     ),
@@ -307,7 +308,7 @@ class _CashInRegisterCard extends StatelessWidget {
                   Text(
                     'Bu ay nakit ciro − giderler',
                     style: TextStyle(
-                      color: green.withValues(alpha: 0.75),
+                      color: fg.withValues(alpha: 0.75),
                       fontSize: 11.5,
                     ),
                   ),
@@ -316,8 +317,8 @@ class _CashInRegisterCard extends StatelessWidget {
             ),
             Text(
               Money.format(amount),
-              style: const TextStyle(
-                color: green,
+              style: TextStyle(
+                color: fg,
                 fontWeight: FontWeight.w800,
                 fontSize: 18,
                 letterSpacing: -0.3,
