@@ -266,7 +266,7 @@ class _ShopRow extends ConsumerWidget {
     final hasRevenue = today.value != null;
 
     return Material(
-      color: scheme.surface,
+      color: Colors.white,
       borderRadius: BorderRadius.circular(18),
       child: InkWell(
         onTap: () => Navigator.of(context).push(
@@ -388,17 +388,16 @@ class _ShopRow extends ConsumerWidget {
                   child: CircularProgressIndicator(strokeWidth: 2),
                 ),
                 error: (_, _) => Icon(Icons.error_outline, color: scheme.error),
-                data: (rev) => Text(
-                  rev == null ? '—' : Money.format(rev.total),
-                  style: TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 16,
-                    letterSpacing: -0.4,
-                    color: rev == null
-                        ? scheme.onSurfaceVariant
-                        : scheme.onSurface,
-                  ),
-                ),
+                data: (rev) => rev == null
+                    ? const SizedBox.shrink()
+                    : Text(
+                        Money.format(rev.total),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 16,
+                          letterSpacing: -0.4,
+                        ),
+                      ),
               ),
               const SizedBox(width: 4),
               Icon(
