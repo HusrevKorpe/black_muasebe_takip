@@ -58,54 +58,17 @@ class EmployeesScreen extends ConsumerWidget {
             itemBuilder: (context, i) {
               final e = employees[i];
               return Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Card(
-                  child: ListTile(
-                    leading: CircleAvatar(child: Text(_initials(e.name))),
-                    title: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            e.name,
-                            style: const TextStyle(fontWeight: FontWeight.w700),
-                          ),
-                        ),
-                        if (e.isPartner)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.primaryContainer,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              'Ortak',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: Theme.of(context).colorScheme.onPrimaryContainer,
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                    subtitle: Text(
-                      '${e.phone}\nBaşlangıç: ${DateFormat('d MMM yyyy', 'tr_TR').format(e.startDate)}',
-                    ),
-                    isThreeLine: true,
-                    onTap: () => EmployeeDetailSheet.show(
-                      context,
-                      employee: e,
-                      canEdit: canEdit,
-                    ),
-                    trailing: canEdit
-                        ? IconButton(
-                            icon: const Icon(Icons.delete_outline_rounded),
-                            tooltip: 'Personeli sil',
-                            onPressed: () => _confirmDelete(context, ref, e),
-                          )
-                        : null,
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _EmployeeCard(
+                  employee: e,
+                  initials: _initials(e.name),
+                  canEdit: canEdit,
+                  onTap: () => EmployeeDetailSheet.show(
+                    context,
+                    employee: e,
+                    canEdit: canEdit,
                   ),
+                  onDelete: canEdit ? () => _confirmDelete(context, ref, e) : null,
                 ),
               );
             },
@@ -152,5 +115,224 @@ class EmployeesScreen extends ConsumerWidget {
         );
       }
     }
+  }
+}
+
+class _EmployeeCard extends StatelessWidget {
+  const _EmployeeCard({
+    required this.employee,
+    required this.initials,
+    required this.canEdit,
+    required this.onTap,
+    required this.onDelete,
+  });
+
+  final Employee employee;
+  final String initials;
+  final bool canEdit;
+  final VoidCallback onTap;
+  final VoidCallback? onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final isPartner = employee.isPartner;
+
+    final avatarColors = isPartner
+        ? [scheme.tertiary, scheme.primary]
+        : [scheme.primary, scheme.secondary];
+
+    return Material(
+      color: scheme.surface,
+      borderRadius: BorderRadius.circular(22),
+      elevation: 0,
+      child: Ink(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(22),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              scheme.surface,
+              Color.alphaBlend(
+                scheme.primary.withValues(alpha: 0.06),
+                scheme.surface,
+              ),
+            ],
+          ),
+          border: Border.all(
+            color: scheme.outlineVariant.withValues(alpha: 0.5),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: scheme.primary.withValues(alpha: 0.06),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(22),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 14, 10, 14),
+            child: Row(
+              children: [
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: avatarColors,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: avatarColors.first.withValues(alpha: 0.35),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    initials,
+                    style: TextStyle(
+                      color: scheme.onPrimary,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 18,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              employee.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 16,
+                                color: scheme.onSurface,
+                                letterSpacing: -0.2,
+                              ),
+                            ),
+                          ),
+                          if (isPartner) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: scheme.primaryContainer,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                'Ortak',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800,
+                                  color: scheme.onPrimaryContainer,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      _InfoLine(
+                        icon: Icons.phone_rounded,
+                        text: employee.phone.isEmpty ? '—' : employee.phone,
+                        color: scheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(height: 2),
+                      _InfoLine(
+                        icon: Icons.event_rounded,
+                        text:
+                            'Başlangıç: ${DateFormat('d MMM yyyy', 'tr_TR').format(employee.startDate)}',
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (canEdit && onDelete != null)
+                      IconButton(
+                        icon: Icon(
+                          Icons.delete_outline_rounded,
+                          color: scheme.error.withValues(alpha: 0.8),
+                        ),
+                        tooltip: 'Personeli sil',
+                        onPressed: onDelete,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: scheme.primary.withValues(alpha: 0.10),
+                      ),
+                      alignment: Alignment.center,
+                      child: Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        size: 14,
+                        color: scheme.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _InfoLine extends StatelessWidget {
+  const _InfoLine({
+    required this.icon,
+    required this.text,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String text;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 14, color: color),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            text,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 13,
+              color: color,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
