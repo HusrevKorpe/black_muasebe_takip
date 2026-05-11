@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/utils/date_keys.dart';
 import '../../../core/utils/money.dart';
 import '../../../core/utils/turkish_money_input_formatter.dart';
+import '../../../models/expense.dart';
 import '../providers/expense_providers.dart';
 
 class ExpenseEntrySheet extends ConsumerStatefulWidget {
@@ -11,21 +12,28 @@ class ExpenseEntrySheet extends ConsumerStatefulWidget {
     super.key,
     required this.shopId,
     required this.createdBy,
+    this.existing,
   });
 
   final String shopId;
   final String createdBy;
+  final Expense? existing;
 
   static Future<void> show(
     BuildContext context, {
     required String shopId,
     required String createdBy,
+    Expense? existing,
   }) {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      builder: (_) => ExpenseEntrySheet(shopId: shopId, createdBy: createdBy),
+      builder: (_) => ExpenseEntrySheet(
+        shopId: shopId,
+        createdBy: createdBy,
+        existing: existing,
+      ),
     );
   }
 
@@ -35,11 +43,24 @@ class ExpenseEntrySheet extends ConsumerStatefulWidget {
 
 class _ExpenseEntrySheetState extends ConsumerState<ExpenseEntrySheet> {
   final _formKey = GlobalKey<FormState>();
-  final _nameCtrl = TextEditingController();
-  final _amountCtrl = TextEditingController();
-  final _noteCtrl = TextEditingController();
+  late final TextEditingController _nameCtrl;
+  late final TextEditingController _amountCtrl;
+  late final TextEditingController _noteCtrl;
   bool _saving = false;
   String? _error;
+
+  bool get _isEdit => widget.existing != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final e = widget.existing;
+    _nameCtrl = TextEditingController(text: e?.name ?? '');
+    _amountCtrl = TextEditingController(
+      text: e != null ? Money.forEdit(e.amount) : '',
+    );
+    _noteCtrl = TextEditingController(text: e?.note ?? '');
+  }
 
   @override
   void dispose() {
@@ -57,14 +78,25 @@ class _ExpenseEntrySheetState extends ConsumerState<ExpenseEntrySheet> {
       _error = null;
     });
     try {
-      await ref.read(expenseRepositoryProvider).add(
-            shopId: widget.shopId,
-            date: DateKeys.today(),
-            name: _nameCtrl.text.trim(),
-            amount: amount,
-            createdBy: widget.createdBy,
-            note: _noteCtrl.text.trim(),
-          );
+      final repo = ref.read(expenseRepositoryProvider);
+      if (_isEdit) {
+        await repo.update(
+          shopId: widget.shopId,
+          expenseId: widget.existing!.id,
+          name: _nameCtrl.text.trim(),
+          amount: amount,
+          note: _noteCtrl.text.trim(),
+        );
+      } else {
+        await repo.add(
+          shopId: widget.shopId,
+          date: DateKeys.today(),
+          name: _nameCtrl.text.trim(),
+          amount: amount,
+          createdBy: widget.createdBy,
+          note: _noteCtrl.text.trim(),
+        );
+      }
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
       setState(() => _error = 'Kaydedilemedi: $e');
@@ -76,6 +108,9 @@ class _ExpenseEntrySheetState extends ConsumerState<ExpenseEntrySheet> {
   @override
   Widget build(BuildContext context) {
     final viewInsets = MediaQuery.of(context).viewInsets;
+    final dateText = _isEdit
+        ? DateKeys.human(DateTime.parse(widget.existing!.dateKey))
+        : DateKeys.human(DateKeys.today());
     return Padding(
       padding: EdgeInsets.only(bottom: viewInsets.bottom),
       child: SingleChildScrollView(
@@ -99,14 +134,14 @@ class _ExpenseEntrySheetState extends ConsumerState<ExpenseEntrySheet> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Yeni Gider',
+                  _isEdit ? 'Gideri Düzenle' : 'Yeni Gider',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  DateKeys.human(DateKeys.today()),
+                  dateText,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),

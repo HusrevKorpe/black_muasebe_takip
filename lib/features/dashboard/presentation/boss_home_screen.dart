@@ -318,6 +318,8 @@ class _ShopRow extends ConsumerWidget {
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(

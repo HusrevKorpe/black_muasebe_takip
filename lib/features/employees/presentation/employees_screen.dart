@@ -267,30 +267,24 @@ class _EmployeeCard extends StatelessWidget {
                 const SizedBox(width: 6),
                 Column(
                   mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    if (canEdit && onDelete != null)
-                      IconButton(
-                        icon: Icon(
-                          Icons.delete_outline_rounded,
-                          color: scheme.error.withValues(alpha: 0.8),
-                        ),
+                    if (canEdit && onDelete != null) ...[
+                      _CirclePill(
+                        icon: Icons.delete_outline_rounded,
+                        iconSize: 16,
+                        iconColor: scheme.error,
+                        background: scheme.error.withValues(alpha: 0.10),
                         tooltip: 'Personeli sil',
-                        onPressed: onDelete,
-                        visualDensity: VisualDensity.compact,
+                        onTap: onDelete,
                       ),
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: scheme.primary.withValues(alpha: 0.10),
-                      ),
-                      alignment: Alignment.center,
-                      child: Icon(
-                        Icons.arrow_forward_ios_rounded,
-                        size: 14,
-                        color: scheme.primary,
-                      ),
+                      const SizedBox(height: 8),
+                    ],
+                    _CirclePill(
+                      icon: Icons.arrow_forward_ios_rounded,
+                      iconSize: 14,
+                      iconColor: scheme.primary,
+                      background: scheme.primary.withValues(alpha: 0.10),
                     ),
                   ],
                 ),
@@ -300,6 +294,48 @@ class _EmployeeCard extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _CirclePill extends StatelessWidget {
+  const _CirclePill({
+    required this.icon,
+    required this.iconSize,
+    required this.iconColor,
+    required this.background,
+    this.onTap,
+    this.tooltip,
+  });
+
+  final IconData icon;
+  final double iconSize;
+  final Color iconColor;
+  final Color background;
+  final VoidCallback? onTap;
+  final String? tooltip;
+
+  @override
+  Widget build(BuildContext context) {
+    final pill = Container(
+      width: 32,
+      height: 32,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: background,
+      ),
+      alignment: Alignment.center,
+      child: Icon(icon, size: iconSize, color: iconColor),
+    );
+    if (onTap == null) return pill;
+    final tappable = Material(
+      color: Colors.transparent,
+      shape: const CircleBorder(),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(onTap: onTap, child: pill),
+    );
+    return tooltip != null
+        ? Tooltip(message: tooltip!, child: tappable)
+        : tappable;
   }
 }
 

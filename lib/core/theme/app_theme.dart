@@ -62,6 +62,12 @@ class AppTheme {
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: chromeColor,
+        surfaceTintColor: Colors.transparent,
+        modalBackgroundColor: chromeColor,
+        modalBarrierColor: Colors.black.withValues(alpha: 0.4),
+      ),
     );
   }
 }

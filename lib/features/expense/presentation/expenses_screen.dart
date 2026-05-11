@@ -112,6 +112,14 @@ class ExpensesScreen extends ConsumerWidget {
               ...expenses.map((e) {
                 final tile = Card(
                   child: ListTile(
+                    onTap: canEdit && appUser != null
+                        ? () => ExpenseEntrySheet.show(
+                              context,
+                              shopId: shopId,
+                              createdBy: appUser.uid,
+                              existing: e,
+                            )
+                        : null,
                     leading: CircleAvatar(
                       backgroundColor:
                           Theme.of(context).colorScheme.errorContainer,
@@ -130,11 +138,46 @@ class ExpensesScreen extends ConsumerWidget {
                               ? '  •  ${e.note}'
                               : ''),
                     ),
-                    trailing: Text(
-                      Money.format(e.amount),
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          Money.format(e.amount),
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleSmall
+                              ?.copyWith(
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -0.2,
+                              ),
+                        ),
+                        if (canEdit && appUser != null) ...[
+                          const SizedBox(width: 6),
+                          Material(
+                            color: Colors.transparent,
+                            shape: const CircleBorder(),
+                            clipBehavior: Clip.antiAlias,
+                            child: InkWell(
+                              onTap: () => ExpenseEntrySheet.show(
+                                context,
+                                shopId: shopId,
+                                createdBy: appUser.uid,
+                                existing: e,
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(6),
+                                child: Icon(
+                                  Icons.edit_outlined,
+                                  size: 16,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
+                                ),
+                              ),
+                            ),
                           ),
+                        ],
+                      ],
                     ),
                   ),
                 );

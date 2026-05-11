@@ -47,7 +47,11 @@ class _OwnerHomeScreenState extends ConsumerState<OwnerHomeScreen> {
     return Scaffold(
       extendBody: true,
       appBar: AppBar(
-        title: Text(shopAsync.value?.name ?? 'Dükkanım'),
+        title: Text(
+          shopAsync.value?.name ?? 'Dükkanım',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.more_vert_rounded),
@@ -368,11 +372,6 @@ class _OwnerOverview extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 24),
-        _SectionHeader(
-          icon: Icons.calendar_view_month_rounded,
-          label: 'Bu Ay',
-        ),
-        const SizedBox(height: 10),
         rangeAsync.when(
           loading: () => const Padding(
             padding: EdgeInsets.all(32),
@@ -395,11 +394,25 @@ class _OwnerOverview extends ConsumerWidget {
               );
             }
             final total = revenues.fold<double>(0, (a, b) => a + b.total);
+            final cash = revenues.fold<double>(0, (a, b) => a + b.cash);
+            final card = revenues.fold<double>(0, (a, b) => a + b.card);
+            final avg = total / revenues.length;
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _MonthTotalCard(total: total, days: revenues.length),
-                const SizedBox(height: 14),
+                _MonthSummaryCard(
+                  total: total,
+                  cash: cash,
+                  card: card,
+                  avg: avg,
+                  days: revenues.length,
+                ),
+                const SizedBox(height: 22),
+                _SectionHeader(
+                  icon: Icons.list_alt_rounded,
+                  label: 'Günlük kayıtlar',
+                ),
+                const SizedBox(height: 12),
                 ...revenues.map((r) => Padding(
                       padding: const EdgeInsets.only(bottom: 10),
                       child: _DayRow(
@@ -480,59 +493,185 @@ class _SoftCard extends StatelessWidget {
   }
 }
 
-class _MonthTotalCard extends StatelessWidget {
-  const _MonthTotalCard({required this.total, required this.days});
+class _MonthSummaryCard extends StatelessWidget {
+  const _MonthSummaryCard({
+    required this.total,
+    required this.cash,
+    required this.card,
+    required this.avg,
+    required this.days,
+  });
   final double total;
+  final double cash;
+  final double card;
+  final double avg;
   final int days;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return _SoftCard(
-      child: Row(
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: scheme.primaryContainer,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(
-              Icons.trending_up_rounded,
-              color: scheme.onPrimaryContainer,
-            ),
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            scheme.surfaceContainerHighest,
+            scheme.surfaceContainer,
+          ],
+        ),
+        border: Border.all(
+          color: scheme.outlineVariant.withValues(alpha: 0.4),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 14,
+            offset: const Offset(0, 5),
           ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Aylık toplam',
-                  style: TextStyle(
-                    color: scheme.onSurfaceVariant,
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w600,
-                  ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: scheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(11),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  '$days gün kayıtlı',
-                  style: TextStyle(
-                    color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
-                    fontSize: 11.5,
-                  ),
+                child: Icon(
+                  Icons.insights_rounded,
+                  size: 16,
+                  color: scheme.onPrimaryContainer,
                 ),
-              ],
+              ),
+              const SizedBox(width: 10),
+              Text(
+                'Bu ay özet',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.3,
+                    ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            Money.format(total),
+            style: TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -1.0,
+              height: 1.0,
+              color: scheme.onSurface,
             ),
           ),
           Text(
-            Money.format(total),
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.5,
+            'Toplam ciro',
+            style: TextStyle(
+              color: scheme.onSurfaceVariant,
+              fontSize: 12.5,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 18),
+          Row(
+            children: [
+              Expanded(
+                child: _StatTile(
+                  icon: Icons.payments_outlined,
+                  label: 'Nakit',
+                  value: Money.format(cash),
                 ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _StatTile(
+                  icon: Icons.credit_card_rounded,
+                  label: 'Kart',
+                  value: Money.format(card),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: _StatTile(
+                  icon: Icons.show_chart_rounded,
+                  label: 'Günlük ort.',
+                  value: Money.format(avg),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _StatTile(
+                  icon: Icons.event_available_rounded,
+                  label: 'Kayıt',
+                  value: '$days gün',
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatTile extends StatelessWidget {
+  const _StatTile({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      decoration: BoxDecoration(
+        color: scheme.surface.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: scheme.outlineVariant.withValues(alpha: 0.35),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 13, color: scheme.onSurfaceVariant),
+              const SizedBox(width: 5),
+              Text(
+                label,
+                style: TextStyle(
+                  color: scheme.onSurfaceVariant,
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: const TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 14.5,
+              letterSpacing: -0.2,
+            ),
           ),
         ],
       ),

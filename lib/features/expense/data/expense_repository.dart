@@ -54,6 +54,21 @@ class ExpenseRepository {
     });
   }
 
+  Future<void> update({
+    required String shopId,
+    required String expenseId,
+    required String name,
+    required double amount,
+    String? note,
+  }) async {
+    await _expenses(shopId).doc(expenseId).update({
+      'name': name,
+      'amount': amount,
+      'note': (note != null && note.isNotEmpty) ? note : FieldValue.delete(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
   Future<void> delete({
     required String shopId,
     required String expenseId,
