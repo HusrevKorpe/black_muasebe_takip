@@ -129,9 +129,8 @@ class _FloatingBottomNav extends StatelessWidget {
 
     return SafeArea(
       top: false,
-      minimum: const EdgeInsets.only(bottom: 6),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
         child: Container(
           height: 62,
           padding: const EdgeInsets.all(6),
@@ -159,6 +158,7 @@ class _FloatingBottomNav extends StatelessWidget {
             ],
           ),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: List.generate(items.length, (i) {
               final selected = i == selectedIndex;
               final item = items[i];
