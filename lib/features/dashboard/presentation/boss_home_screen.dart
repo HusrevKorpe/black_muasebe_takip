@@ -265,8 +265,9 @@ class _ShopRow extends ConsumerWidget {
     final scheme = Theme.of(context).colorScheme;
     final hasRevenue = today.value != null;
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Material(
-      color: Colors.white,
+      color: isDark ? scheme.surfaceContainerHigh : Colors.white,
       borderRadius: BorderRadius.circular(18),
       child: InkWell(
         onTap: () => Navigator.of(context).push(
