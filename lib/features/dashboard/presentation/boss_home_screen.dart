@@ -365,7 +365,7 @@ class _ShopRow extends ConsumerWidget {
                           );
                         }
                         return Text(
-                          'Nakit ${Money.format(rev.cash)}  •  Kart ${Money.format(rev.card)}',
+                          'Nakit ${Money.format(rev.cash)}  •  Kart ${Money.format(rev.card)}',
                           style: TextStyle(
                             color: scheme.onSurfaceVariant,
                             fontSize: 12,

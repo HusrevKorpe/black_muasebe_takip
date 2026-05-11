@@ -591,7 +591,7 @@ class _DayRow extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Nakit ${Money.format(revenue.cash)}  •  Kart ${Money.format(revenue.card)}',
+                      'Nakit ${Money.format(revenue.cash)}  •  Kart ${Money.format(revenue.card)}',
                       style: TextStyle(
                         color: scheme.onSurfaceVariant,
                         fontSize: 12,

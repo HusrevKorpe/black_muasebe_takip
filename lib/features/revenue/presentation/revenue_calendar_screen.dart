@@ -238,7 +238,7 @@ class _SelectedDayCard extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                'Nakit ${Money.format(revenue!.cash)}  •  Kart ${Money.format(revenue!.card)}',
+                'Nakit ${Money.format(revenue!.cash)}  •  Kart ${Money.format(revenue!.card)}',
                 style: TextStyle(color: scheme.onSurfaceVariant),
               ),
               if (revenue!.editHistory.isNotEmpty) ...[
