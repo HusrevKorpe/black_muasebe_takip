@@ -284,7 +284,7 @@ class ShopDetailScreen extends ConsumerWidget {
             color: scheme.tertiary,
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (_) => ExpensesScreen(shopId: shopId, canEdit: false),
+                builder: (_) => ExpensesScreen(shopId: shopId),
               ),
             ),
           ),

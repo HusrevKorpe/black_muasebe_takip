@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/utils/date_keys.dart';
 import '../../../core/utils/money.dart';
 import '../../auth/providers/auth_providers.dart';
+import '../../revenue/providers/revenue_providers.dart';
 import '../providers/expense_providers.dart';
 import 'expense_entry_sheet.dart';
 
@@ -26,6 +27,9 @@ class ExpensesScreen extends ConsumerWidget {
 
     final rangeAsync = ref.watch(expenseRangeProvider(
       ExpenseRangeArgs(shopId: shopId, from: monthStart, to: today),
+    ));
+    final revenueAsync = ref.watch(revenueRangeProvider(
+      RevenueRangeArgs(shopId: shopId, from: monthStart, to: today),
     ));
 
     return Scaffold(
@@ -62,6 +66,11 @@ class ExpensesScreen extends ConsumerWidget {
             );
           }
           final total = expenses.fold<double>(0, (a, b) => a + b.amount);
+          final cashRevenue = revenueAsync.maybeWhen(
+            data: (revs) => revs.fold<double>(0, (a, b) => a + b.cash),
+            orElse: () => 0.0,
+          );
+          final cashInRegister = cashRevenue - total;
           return ListView(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
             children: [
@@ -97,6 +106,8 @@ class ExpensesScreen extends ConsumerWidget {
                   ),
                 ),
               ),
+              const SizedBox(height: 10),
+              _CashInRegisterCard(amount: cashInRegister),
               const SizedBox(height: 12),
               ...expenses.map((e) {
                 final tile = Card(
@@ -200,6 +211,77 @@ class ExpensesScreen extends ConsumerWidget {
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+class _CashInRegisterCard extends StatelessWidget {
+  const _CashInRegisterCard({required this.amount});
+  final double amount;
+
+  @override
+  Widget build(BuildContext context) {
+    const green = Color(0xFF1B873F);
+    const greenSoft = Color(0xFFE6F4EA);
+    return Card(
+      elevation: 0,
+      color: greenSoft,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: green.withValues(alpha: 0.35)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: green.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.savings_outlined,
+                color: green,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Kasadaki Nakit Para',
+                    style: TextStyle(
+                      color: green,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Bu ay nakit ciro − giderler',
+                    style: TextStyle(
+                      color: green.withValues(alpha: 0.75),
+                      fontSize: 11.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Text(
+              Money.format(amount),
+              style: const TextStyle(
+                color: green,
+                fontWeight: FontWeight.w800,
+                fontSize: 18,
+                letterSpacing: -0.3,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
