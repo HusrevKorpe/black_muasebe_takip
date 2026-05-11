@@ -289,12 +289,12 @@ class _BalanceCard extends StatelessWidget {
     final theme = Theme.of(context);
     final (label, color, icon) = switch (balance) {
       > 0 => (
-          'Borç bakiyesi',
+          'Bize borcu',
           theme.colorScheme.errorContainer,
           Icons.trending_up_rounded,
         ),
       < 0 => (
-          'Fazla ödeme',
+          'Bizim borcumuz',
           theme.colorScheme.tertiaryContainer,
           Icons.trending_down_rounded,
         ),
