@@ -5,6 +5,7 @@ import '../../../core/utils/date_keys.dart';
 import '../../../core/utils/money.dart';
 import '../../../models/shop.dart';
 import '../../auth/providers/auth_providers.dart';
+import '../../settings/presentation/theme_switch_tile.dart';
 import '../../shop/providers/shop_providers.dart';
 import '../providers/boss_dashboard_providers.dart';
 import 'shop_detail_screen.dart';
@@ -21,9 +22,9 @@ class BossHomeScreen extends ConsumerWidget {
         title: const Text('Tüm Dükkanlar'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout_rounded),
-            tooltip: 'Çıkış Yap',
-            onPressed: () => ref.read(authRepositoryProvider).signOut(),
+            icon: const Icon(Icons.more_vert_rounded),
+            tooltip: 'Menü',
+            onPressed: () => _openBossMenu(context, ref),
           ),
         ],
       ),
@@ -63,6 +64,64 @@ class BossHomeScreen extends ConsumerWidget {
           );
         },
       ),
+    );
+  }
+
+  void _openBossMenu(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (sheetCtx) {
+        final scheme = Theme.of(sheetCtx).colorScheme;
+        return SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 4, 12, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const ThemeSwitchTile(),
+                ListTile(
+                  leading: Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: scheme.error.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      Icons.logout_rounded,
+                      color: scheme.error,
+                      size: 22,
+                    ),
+                  ),
+                  title: const Text(
+                    'Çıkış Yap',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15.5,
+                    ),
+                  ),
+                  trailing: Icon(
+                    Icons.chevron_right_rounded,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  onTap: () {
+                    Navigator.of(sheetCtx).pop();
+                    ref.read(authRepositoryProvider).signOut();
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

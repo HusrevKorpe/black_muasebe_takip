@@ -6,6 +6,7 @@ import '../../../core/utils/money.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../../employees/presentation/employees_screen.dart';
 import '../../expense/presentation/expenses_screen.dart';
+import '../../settings/presentation/theme_switch_tile.dart';
 import '../../shop/providers/shop_providers.dart';
 import '../providers/revenue_providers.dart';
 import 'revenue_calendar_screen.dart';
@@ -49,22 +50,9 @@ class _OwnerHomeScreenState extends ConsumerState<OwnerHomeScreen> {
         title: Text(shopAsync.value?.name ?? 'Dükkanım'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.receipt_long_outlined),
-            tooltip: 'Giderler',
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => ExpensesScreen(shopId: shopId),
-              ),
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.people_alt_outlined),
-            tooltip: 'Personeller',
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => EmployeesScreen(shopId: shopId),
-              ),
-            ),
+            icon: const Icon(Icons.more_vert_rounded),
+            tooltip: 'Menü',
+            onPressed: () => _openOwnerMenu(context, shopId),
           ),
           IconButton(
             icon: const Icon(Icons.logout_rounded),
@@ -98,6 +86,96 @@ class _OwnerHomeScreenState extends ConsumerState<OwnerHomeScreen> {
       ),
     );
   }
+
+  void _openOwnerMenu(BuildContext context, String shopId) {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (sheetCtx) {
+        final scheme = Theme.of(sheetCtx).colorScheme;
+        final items = <_OwnerMenuAction>[
+          _OwnerMenuAction(
+            icon: Icons.receipt_long_outlined,
+            label: 'Giderler',
+            color: scheme.tertiary,
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => ExpensesScreen(shopId: shopId),
+              ),
+            ),
+          ),
+          _OwnerMenuAction(
+            icon: Icons.people_alt_outlined,
+            label: 'Personeller',
+            color: scheme.primary,
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => EmployeesScreen(shopId: shopId),
+              ),
+            ),
+          ),
+        ];
+        return SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 4, 12, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (final item in items)
+                  ListTile(
+                    leading: Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: item.color.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(item.icon, color: item.color, size: 22),
+                    ),
+                    title: Text(
+                      item.label,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15.5,
+                      ),
+                    ),
+                    trailing: Icon(
+                      Icons.chevron_right_rounded,
+                      color: scheme.onSurfaceVariant,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    onTap: () {
+                      Navigator.of(sheetCtx).pop();
+                      item.onTap();
+                    },
+                  ),
+                const ThemeSwitchTile(),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _OwnerMenuAction {
+  const _OwnerMenuAction({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
 }
 
 class _NavItem {
