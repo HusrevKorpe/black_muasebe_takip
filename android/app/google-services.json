@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "662432068913",
+    "project_id": "muasebe-takip",
+    "storage_bucket": "muasebe-takip.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:662432068913:android:b253f4a3f5ce8703b4ec10",
+        "android_client_info": {
+          "package_name": "com.husrevkorpe.muasebetakip"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "662432068913-3lmaquhulnvra49at9eqg0m5fev2jbkk.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAiFfaiXhb6GsTxpeuTy-im-YVtQH1NP-Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "662432068913-3lmaquhulnvra49at9eqg0m5fev2jbkk.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "662432068913-61ge7qog5l62is0amdsbts6sqk2fkggl.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.muhammedkorpe.muasebetakip",
+                "app_store_id": "123456789"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

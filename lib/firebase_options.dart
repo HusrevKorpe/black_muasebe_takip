@@ -24,10 +24,7 @@ class DefaultFirebaseOptions {
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for android - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return android;
       case TargetPlatform.iOS:
         return ios;
       case TargetPlatform.macOS:
@@ -61,4 +58,13 @@ class DefaultFirebaseOptions {
     iosClientId: '662432068913-6fnns72oufrjgljld02t0au8kmpv36h8.apps.googleusercontent.com',
     iosBundleId: 'com.example.muasebeTakip',
   );
+
+  static const FirebaseOptions android = FirebaseOptions(
+    apiKey: 'AIzaSyAiFfaiXhb6GsTxpeuTy-im-YVtQH1NP-Y',
+    appId: '1:662432068913:android:b253f4a3f5ce8703b4ec10',
+    messagingSenderId: '662432068913',
+    projectId: 'muasebe-takip',
+    storageBucket: 'muasebe-takip.firebasestorage.app',
+  );
+
 }
